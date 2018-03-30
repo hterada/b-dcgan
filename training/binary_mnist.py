@@ -32,6 +32,7 @@ import lasagne.layers as ll
 import lasagne.nonlinearities as ln
 
 import binary_net
+import binary_net_ex
 from binary_net import binarization
 from binary_net import round3
 
