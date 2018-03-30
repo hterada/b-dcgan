@@ -10,7 +10,7 @@ from time import time
 from collections import OrderedDict
 
 import numpy as np
-from tqdm import tqdm #プログレスバー用
+from tqdm import tqdm
 from matplotlib import pyplot as plt
 from sklearn.externals import joblib
 
@@ -117,7 +117,7 @@ def gen_samples(n, nbatch, ysize):
         labels.append(np.argmax(ymb, axis=1))
         n_gen += len(xmb)
 
-    # 端数部分の処理
+    # fraction part
     n_left = n-n_gen
     ymb = floatX(OneHot(np_rng.randint(0, 10, nbatch), ysize))
     zmb = sample_z(nbatch, Z_SIZE)
@@ -138,13 +138,14 @@ bin_mnist = binary_mnist.BinaryMnist(is_binary=IS_BINARY)
 
 print sys.argv[0], 'ver.', VER, VER_DESC, '/', bin_mnist.getVersionDesc()
 
-# MNISTデータをロード
-#  trX:トレーニング画像(28x28)
-#  vaX:バリデーション画像（シャッフル後の trX の 50000<=index のデータ）
-#  teX:テスト画像
-#  trY:トレーニングラベル（シャッフル後の trY の index<50000 のデータ )
-#  vaY:バリデーションラベル(シャッフル後の trY の 50000<=index のデータ)
-#  teY:テストラベル
+# Loading MNIST datasets
+#  trX:training set (image 28x28)
+#  vaX:varidation set （ trX of 50000<=index after shuffle ）
+#  teX:test set
+#  trY:training labels
+#  vaY:validation labels ( trY of 50000<=index after shuffle )
+#  teY:test labels
+
 trX, vaX, teX, trY, vaY, teY = mnist_with_valid_set()
 
 #
@@ -155,9 +156,6 @@ trY0 = trY
 if IS_BINARY:
     trX = reshapeX_forBNN(trX)
     trY = reshapeY_forBNN(trY)
-    # print 'trY:', trY[0] #OK
-    #vaX = reshapeX_forBNN(vaX)
-    #vaY = reshapeY_forBNN(vaY)
     teX = reshapeX_forBNN(teX)
     teY = reshapeY_forBNN(teY)
 
@@ -173,9 +171,9 @@ print('#### teY:', teY.shape)
 ntrain, nval, ntest = len(trX), len(vaX), len(teX)
 
 #
-# ディレクトリ作成
+# Making Directories
 #
-desc = 'cond_dcgan'
+desc = 'b_dcgan'
 model_dir = 'models/%s'%desc
 samples_dir = 'samples/%s'%desc
 if not os.path.exists('logs/'):
@@ -190,67 +188,47 @@ sigmoid = activations.Sigmoid()
 lrelu = activations.LeakyRectify()
 bce = T.nnet.binary_crossentropy
 
-# 正規分布 Normal Distribution
-#gifn = inits.Normal(scale=0.02)
-#difn = inits.Normal(scale=0.02)
-
-# 正規分布によるランダム値(shape, name)
-#gw  = gifn((Z_SIZE+NUM_Y, ngfc), 'gw')
-#gw2 = gifn((ngfc+NUM_Y, ngf*2*7*7), 'gw2') #**
-#gw3 = gifn((ngf*2+NUM_Y, ngf, 5, 5), 'gw3')
-#gwx = gifn((ngf+NUM_Y, nc, 5, 5), 'gwx')
-
-# 正規分布によるランダム値(shape, name)
-#dw  = difn((ndf, nc+NUM_Y, 5, 5), 'dw')         #(64, 1+10, 5, 5)
-#dw2 = difn((ndf*2, ndf+NUM_Y, 5, 5), 'dw2')     #(128, 64+10, 5, 5)
-#dw3 = difn((ndf*2*7*7+NUM_Y, ndfc), 'dw3')      #
-#dwy = difn((ndfc+NUM_Y, 1), 'dwy')
-
-#printVal('dw', dw)
-#printVal('dw2', dw2)
-#printVal('dw3', dw3)
-#printVal('dwy', dwy)
-
-#gen_params = [gw, gw2, gw3, gwx]
-#print 'gen_params:', type(gen_params)
-#discrim_params = [dw, dw2, dw3, dwy]
-
 X = T.tensor4('X')
 Z = T.matrix('Z')
 Y = T.matrix('Y')
 
 bin_mnist.getProperties()
 
-# ジェネレータ
+## Generator(G)
 gX_layers, out_lYS, out_G3_1, out_G3_2, out_G10, out_G11, out_G12 = bin_mnist.makeGeneratorLayers( MINIBATCH_SIZE, Z, Z_SIZE, Y, NUM_Y)
 gX = ll.get_output(gX_layers, deterministic=False)
 
 print 'getGenParams:'
 gen_params, gen_sp_params = bin_mnist.getGenParams()
-# ディスクリミネータ(Real Data)
+
+## Discriminator(D)
 D_layers, layer_X, layer_Y = bin_mnist.makeDiscriminator( MINIBATCH_SIZE, X, (MINIBATCH_SIZE, nc, npx, npx), Y, NUM_Y )
+# D output for Real Data
 p_real = ll.get_output(D_layers, inputs={layer_X:X})
-# ディスクリミネータ(Gen Data)
+# D output for Generated Data
 p_gen  = ll.get_output(D_layers, inputs={layer_X:gX})
-#
+
 print 'getDisParams:'
 discrim_params, discrim_sp_params = bin_mnist.getDisParams()
 
-# ディスクリミネータのモデル
+## Costs
 
-# Dのコスト関数（実データについての）＝BCEの平均値
+# Cost function of D for real data = average of BCE(binary cross entropy)
 d_cost_real = lo.binary_crossentropy(p_real, T.ones(p_real.shape)).mean()
-# Dのコスト関数（Gデータについての）＝BCEの平均値
+
+# Cost function of D for gen  data = average of BCE
 d_cost_gen = lo.binary_crossentropy(p_gen, T.zeros(p_gen.shape)).mean()
-# Gのコスト関数（Gデータ）＝BCEの平均値
+
+# Const function of G = average of BCE
 g_cost_d = lo.binary_crossentropy(p_gen, T.ones(p_gen.shape)).mean()
 
-# Dの総合コスト
+# total cost of D
 d_cost = d_cost_real + d_cost_gen
-# Gのコスト
+
+# total cost of G
 g_cost = g_cost_d
 
-# コストのまとめ
+# total costs
 cost = [g_cost, d_cost, g_cost_d, d_cost_real, d_cost_gen]
 
 #
@@ -271,19 +249,19 @@ else:
 updates = OrderedDict(d_updates.items() + g_updates.items())
 
 #
-# 訓練関数
+# training function
 #
 sys.stdout.flush()
 print( 'COMPILING...' )
 t = time()
-_train_g = theano.function([X, Z, Y], cost, updates=g_updates) #XXX
+_train_g = theano.function([X, Z, Y], cost, updates=g_updates)
 _train_d = theano.function([X, Z, Y], cost, updates=d_updates)
 _gen = theano.function([Z, Y], [gX, out_lYS, out_G3_1, out_G3_2, out_G10, out_G11, out_G12] )
 print( 'COMPILING...DONE' )
 print( '%.2f seconds to compile theano functions'%(time()-t))
 
 #
-# トレーニングデータをグレースケール画像ファイルとして保存
+# Saving the training images in grey-scaled.
 #
 tr_idxs = np.arange(len(trX0))
 trX0_vis = np.asarray([
@@ -311,7 +289,6 @@ log_fields = [
     'd_cost',
 ]
 
-#print( desc.upper() )
 n_updates = 0
 n_check = 0
 n_epochs = 0
@@ -326,41 +303,26 @@ for ii in range(0, MINIBATCH_SIZE):
 
 sample_ymb = reshapeY_forBNN(np.array(tmp_ymb))
 
-#if IS_BINARY:
-#    sample_ymb = 2*sample_ymb - 1.0
-#    #print 'sample_ymb:', sample_ymb[0]
-
 sys.stdout.flush()
 
-
 #
-# トレーニングループ(main loop)
+# Training loop (main loop)
 #
 at_first = True
 for epoch in range(1, niter+niter_decay+1):
-    # データをシャッフル（同じインデクス）
+    # shuffle
     trX0, trX, trY = shuffle(trX0, trX, trY)
 
-    # この段階でのデータ（画像）を生成
+    # Generate images at this time.
     genout, out_lYS, out_G3_1, out_G3_2, out_G10, out_G11, out_G12 = _gen(sample_zmb, sample_ymb)
-    #print_out(out_lYS, 'out_lYS')
-    #print_out(out_G3_1, 'out_G3_1')
-    #print_out(out_G3_2, 'out_G3_2')
-    #print_out(out_G10, 'out_G10')
-    #print_out(out_G11, 'out_G11')
-    #print_out(out_G12, 'out_G12')
-    print_out(genout, 'genout')
-
     samples = genout
-    print_out(samples, 'samples')
-    # 画像保存
     grayscale_grid_vis(inverse_transform(samples), (10, 10), 'samples/%s/%d.png'%(desc, n_epochs))
 
-    #tqdm()はプログレスバー
+    #
     for imb0, imb, ymb in tqdm(iter_data(trX0, trX, trY, size=MINIBATCH_SIZE), total=ntrain/MINIBATCH_SIZE):
-        # X:実データ
-        # (?, 1, 28, 28) の形に変形
+        # X:real data
         if not IS_BINARY:
+            # transform imb to (?, 1, 28, 28)
             imb = transform(imb)
             ymb = floatX(np.uint8(OneHot(ymb, NUM_Y)))
 
@@ -369,58 +331,38 @@ for epoch in range(1, niter+niter_decay+1):
         if at_first is True:
             print 'imb:', imb.shape, np.min(imb), np.max(imb)
 
-        # Y: ラベル
+        # Y: label
         ymb = expandRows( ymb, MINIBATCH_SIZE )
         if at_first is True:
             print 'ymb:', ymb.shape, np.min(ymb), np.max(ymb)
 
-        # Z 正規分布のランダム値
+        # Z: random variabel from Gaussian
         zmb = sample_z(len(imb), Z_SIZE)
         if at_first is True:
             print_out(zmb, 'zmb')
             at_first = False
 
-        # G　と D を交互に訓練
+        # Train G and D each other
         if n_updates % (k+1) == 0:
-            # G訓練
+            # Train G
             cost = _train_g(imb, zmb, ymb)
         else:
-            # D訓練
-            #imb0 = expandRows( transform(imb0), MINIBATCH_SIZE )
-            #cost = _train_d(imb0, zmb, ymb)
-
+            # Train D
             cost = _train_d(imb, zmb, ymb)
 
         n_updates += 1
         n_examples += len(imb)
 
-    if (epoch-1) % 5 == 0: #epoch ５回ごとにログ表示
-        g_cost = float(cost[0])
-        d_cost = float(cost[1])
-        # スコア表示のためのサンプル作成
-        gX, gY = gen_samples(100000, MINIBATCH_SIZE, NUM_Y)
-        gX = gX.reshape(len(gX), -1)
-        va_nnc_acc_1k = nnc_score(gX[:1000], gY[:1000], vaX, vaY, metric='euclidean')
-        va_nnc_acc_10k = nnc_score(gX[:10000], gY[:10000], vaX, vaY, metric='euclidean')
-        va_nnc_acc_100k = nnc_score(gX[:100000], gY[:100000], vaX, vaY, metric='euclidean')
-        va_nnd_1k = nnd_score(gX[:1000], vaX, metric='euclidean')
-        va_nnd_10k = nnd_score(gX[:10000], vaX, metric='euclidean')
-        va_nnd_100k = nnd_score(gX[:100000], vaX, metric='euclidean')
-        log = [n_epochs, n_updates, n_examples, time()-t, va_nnc_acc_1k, va_nnc_acc_10k, va_nnc_acc_100k, va_nnd_1k, va_nnd_10k, va_nnd_100k, g_cost, d_cost]
-        print( '%.0f %.2f %.2f %.2f %.4f %.4f %.4f %.4f %.4f'%(epoch, va_nnc_acc_1k, va_nnc_acc_10k, va_nnc_acc_100k, va_nnd_1k, va_nnd_10k, va_nnd_100k, g_cost, d_cost) )
-        f_log.write(json.dumps(dict(zip(log_fields, log)))+'\n')
-        f_log.flush()
-
     n_epochs += 1
     if n_epochs > niter:
-        # 学習率の更新
+        # Update the Learning Rate
         if LR_DECAY_ALGO==1:
             lrt.set_value(floatX(lrt.get_value() - lr/niter_decay))
         elif LR_DECAY_ALGO==2:
             lrt.set_value(floatX(lr2))
-            
+
         print 'Learning Late=', lrt.get_value()
-    if True or n_epochs in [1, 5, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100, 150, 200]:
+
         joblib.dump([p for p in gen_params], 'models/%s/%04d_gen_params.jl'%(desc, n_epochs), compress=True)
         joblib.dump([p for p in gen_sp_params], 'models/%s/%04d_gen_sp_params.jl'%(desc, n_epochs), compress=True)
         #joblib.dump([p for p in discrim_params], 'models/%s/%04d_discrim_params.jl'%(desc, n_epochs), compress=True)
