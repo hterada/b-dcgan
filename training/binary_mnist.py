@@ -73,20 +73,24 @@ class BinaryMnist(object):
         self.NUM_FC_UNITS = 600
         self.NUM_GEN_FILTERS = 64
 
-        # S3-2
+        ### Scenario Parameters
+
+        # Encoder
         self.NUM_HIDDEN_LAYERS = 3
         self.IS_INPUT_AS_INT    = True
         if self.IS_INPUT_AS_INT:
-            self.GH=math.pow(2,1)-1
+            h=2
+            self.A=math.pow(2,(h-1))-1
         else:
-            self.GH=1.0
+            self.A=1.0
 
-        self.IS_GEN_ENC_BIN     = True
-        self.IS_GEN_ENC_BN_BIN  = True
+        self.IS_USE_B_FC     = True
+        self.IS_USE_B_BNA_1  = True
 
-        self.IS_GEN_DEC_BIN     = True
-        self.IS_GEN_DEC2_BIN    = True
-        self.IS_GEN_DEC_BN_BIN  = True
+        # Decoder
+        self.IS_USE_B_DECONV_1  = True
+        self.IS_USE_B_DECONV_2  = False
+        self.IS_USE_B_BNA_2     = True
 
         self.IS_DIS_BIN = False #experimental
 
@@ -113,9 +117,9 @@ class BinaryMnist(object):
         yb = pre_func(aY.dimshuffle(0, 1, 'x', 'x'))
 
         # Input layer
-        layer_Z = ll.InputLayer(shape=(aNBatch, aZSize), input_var=pre_func(aZ*self.GH), name='Z')
+        layer_Z = ll.InputLayer(shape=(aNBatch, aZSize), input_var=pre_func(aZ*self.A), name='Z')
         layer_Y = ll.InputLayer(shape=(aNBatch, aYSize), input_var=aY, name='Y')
-        layer_YGH = ll.InputLayer(shape=(aNBatch, aYSize), input_var=pre_func(aY*self.GH), name='YGH')
+        layer_YGH = ll.InputLayer(shape=(aNBatch, aYSize), input_var=pre_func(aY*self.A), name='YGH')
         out_lYS = ll.get_output(layer_Y)
 
         # encoder
@@ -136,7 +140,7 @@ class BinaryMnist(object):
         #(G3-1) Full Connect (w)
         out_G3_1=None
         for k in range(self.NUM_HIDDEN_LAYERS):
-            if self.IS_GEN_ENC_BIN:
+            if self.IS_USE_B_FC:
                 gen = binary_net.DenseLayer(
                     gen,
                     binary=True,
@@ -159,7 +163,7 @@ class BinaryMnist(object):
                 out_G3_1 = ll.get_output(gen)
 
             #(G3-2) Batch Norm
-            if self.IS_GEN_ENC_BN_BIN:
+            if self.IS_USE_B_BNA_1:
                 # This layer includes the activation process
                 gen = binary_net_ex.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA, H=1 )
                 print 'G3-2:gen.shape', gen.input_shape, gen.output_shape
@@ -180,7 +184,7 @@ class BinaryMnist(object):
 
         #(G5)
         #(G5-1) Full connect (w2)
-        if self.IS_GEN_ENC_BIN:
+        if self.IS_USE_B_FC:
             gen = binary_net.DenseLayer(
                 gen,
                 binary=True,
@@ -201,7 +205,7 @@ class BinaryMnist(object):
         print 'G5-1:gen.shape', gen.input_shape, gen.output_shape #(128,3136)
 
         #(G5-2) Batch Norm
-        if self.IS_GEN_ENC_BN_BIN:
+        if self.IS_USE_B_BNA_1:
             gen = binary_net_ex.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA, H=1 )
         else:
             gen = ll.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA )
@@ -226,7 +230,7 @@ class BinaryMnist(object):
 
         #(G8)
         # deconvolution
-        if self.IS_GEN_DEC_BIN:
+        if self.IS_USE_B_DECONV_1:
             gen_dec = binary_net_ex.Deconv2DLayer( gen_dec, num_filters = self.NUM_GEN_FILTERS,
                                                    filter_size=(5,5),
                                                    stride=(2,2),
@@ -251,7 +255,7 @@ class BinaryMnist(object):
         print 'G8:gen_dec.shape', gen_dec.input_shape, gen_dec.output_shape #(128, 64, 14, 14)
 
         #(G9)
-        if self.IS_GEN_DEC_BN_BIN:
+        if self.IS_USE_B_BNA_2:
             gen_dec = binary_net_ex.BatchNormLayer( gen_dec, verbose=True, epsilon=EPSILON, alpha=ALPHA, H=1.0 )
         else:
             gen_dec = ll.BatchNormLayer( gen_dec, epsilon=EPSILON, alpha=ALPHA )
@@ -264,7 +268,7 @@ class BinaryMnist(object):
         out_G10 = ll.get_output(gen_dec)
 
         #(G11)
-        if self.IS_GEN_DEC2_BIN:
+        if self.IS_USE_B_DECONV_2:
             gen_dec = binary_net_ex.Deconv2DLayer( gen_dec, num_filters = NUM_IMG_CHANNELS,
                                                    filter_size=(5,5), stride=(2,2),
                                                    output_size=(28,28),
@@ -289,8 +293,8 @@ class BinaryMnist(object):
         out_G11 = ll.get_output(gen_dec)
 
         #(G12)
-        if self.IS_GEN_DEC_BN_BIN:
-            #gen_dec = ll.ExpressionLayer(gen_dec, function = lambda X : X/self.GH)
+        if self.IS_USE_B_BNA_2:
+            #gen_dec = ll.ExpressionLayer(gen_dec, function = lambda X : X/self.A)
             pass
         #
         gen_dec = ll.NonlinearityLayer( gen_dec, nonlinearity=lasagne.nonlinearities.sigmoid ) #TODO binary ?
