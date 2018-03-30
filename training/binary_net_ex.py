@@ -127,7 +127,7 @@ def perform_filters(
     # ch 方向に和を取る
     return T.tensordot(x_i.flatten(ndim=2), filter_j,axes=2)
 
-    # 等価コード
+    ### Equivalent Code:>>
     # sum0 = T.zeros_like( T.dot( x_i[0].flatten(), filter_j[0] ) )
     # results, updates = theano.scan(
     #     fn = accum_filter,
@@ -137,6 +137,7 @@ def perform_filters(
     # #results = theano.printing.Print("perform_filters.results:")(results)
     # print '@perform_filters.3'
     # return results[-1]
+    ### Equivalent Code:<<
 
 # by H.Terada
 class DeconvSparse2DLayer(lasagne.layers.Layer):
@@ -154,7 +155,7 @@ class DeconvSparse2DLayer(lasagne.layers.Layer):
         if W is None:
             self.W = lasagne.init.Normal().sample( (num_filters, incoming.output_shape[0], filter_size, filter_size) )
         else:
-            # ここは Lasagne TransposedConv2Dに仕様を合わせるため、論理を逆にする
+            # To fit the lasagne TransposedConv2D's spec, make logic of flip inverted
             if self.flip_filters:
                 self.W = W
             else:
