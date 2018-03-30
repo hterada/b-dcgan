@@ -159,7 +159,7 @@ class BinaryMnist(object):
 
             #(G3-2) Batch Norm
             if self.IS_GEN_ENC_BN_BIN:
-                # このレイヤはActivation処理も含む
+                # This layer includes the activation process
                 gen = binary_net.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA, H=1 )
                 print 'G3-2:gen.shape', gen.input_shape, gen.output_shape
             else:
@@ -224,7 +224,7 @@ class BinaryMnist(object):
         print 'G7:', gen_dec.output_shape #(128, 74, 7, 7)
 
         #(G8)
-        # deconvolution #TODO:binarize
+        # deconvolution
         if self.IS_GEN_DEC_BIN:
             gen_dec = binary_net.Deconv2DLayer( gen_dec, num_filters = self.NUM_GEN_FILTERS,
                                             filter_size=(5,5),
@@ -304,32 +304,31 @@ class BinaryMnist(object):
         mlp = self.gen
         if self.IS_BINARY:
             # W updates
-            # binary なパラメータだけを取り出す
+            # extract 'binary' parameters only
             Wb_list = lasagne.layers.get_all_params(self.gen, binary=True)
             for eW in Wb_list:
                 #print( 'eW:', type(eW), eW )
                 pass
 
-            # binary なパラメータのみに対する勾配を求めてリストアップ
+            # Make a list of the gradients w.r.t. the binary parameters
             W_grad_list = binary_net.compute_grads(loss, mlp)
             #print('W_grad_list', type(W_grad_list), W_grad_list)
 
-            # ADAM学習則による更新式マップ(OrderedDict)
+            # Update function map(OrderedDict) with ADAM learning method
             updates_b0 = lasagne.updates.adam(loss_or_grads=W_grad_list, params=Wb_list, learning_rate=LR,
                                               beta1=aBeta1
             )
 
-            # バイナリ化のためのクリッピング＆スケーリング
+            # clipping & scaling for binarization
             updates_b1 = binary_net.clipping_scaling(updates_b0, mlp)
 
             # other parameters updates
-            # 非バイナリパラメータの更新則
             Wr_list = lasagne.layers.get_all_params(mlp, trainable=True, binary=False)
             for Wr in Wr_list:
                 #print('Wr:', type(Wr), Wr)
                 pass
 
-            # バイナリ＋非バイナリ：パラメータ群をまとめる
+            # Marging the parameters : binary params + other params
             updates = OrderedDict(updates_b1.items() +
                                   lasagne.updates.adam(loss_or_grads=loss,
                                                        params=Wr_list, learning_rate=LR, beta1=aBeta1).items())
@@ -472,11 +471,9 @@ class BinaryMnist(object):
             '''
             aY: theano var.
             '''
-            #aY = T.printing.Print('aY:')(aY) #DEBUG
             x_shape = aLayer.output_shape
             oned = T.ones( (x_shape[0], aYSize, x_shape[2], x_shape[3]) )
             y_oned = aY*oned # [Ymin, Ymax]
-            #y_oned = T.printing.Print('y_oned')(y_oned) #DEBUG
             l_aY = ll.InputLayer(input_var=y_oned, shape=(x_shape[0], aYSize, x_shape[2], x_shape[3]))
             layer = ll.ConcatLayer([aLayer, l_aY],
                                    axis=1)
