@@ -30,3 +30,8 @@ The parameters of **scenario** can be modified in source code directly:
 - in b-dcgan/training/binary_mnist.py
 -- The property variables of class BinaryMnist
 
+### Result of Training
+- Model parameters are in sub directory 'models'.
+- Generated images are in sub directory 'samples'
+
+
