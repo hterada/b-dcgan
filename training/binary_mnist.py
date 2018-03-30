@@ -161,7 +161,7 @@ class BinaryMnist(object):
             #(G3-2) Batch Norm
             if self.IS_GEN_ENC_BN_BIN:
                 # This layer includes the activation process
-                gen = binary_net.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA, H=1 )
+                gen = binary_net_ex.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA, H=1 )
                 print 'G3-2:gen.shape', gen.input_shape, gen.output_shape
             else:
                 gen = ll.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA )
@@ -202,7 +202,7 @@ class BinaryMnist(object):
 
         #(G5-2) Batch Norm
         if self.IS_GEN_ENC_BN_BIN:
-            gen = binary_net.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA, H=1 )
+            gen = binary_net_ex.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA, H=1 )
         else:
             gen = ll.BatchNormLayer( gen, epsilon=EPSILON, alpha=ALPHA )
 
@@ -227,17 +227,17 @@ class BinaryMnist(object):
         #(G8)
         # deconvolution
         if self.IS_GEN_DEC_BIN:
-            gen_dec = binary_net.Deconv2DLayer( gen_dec, num_filters = self.NUM_GEN_FILTERS,
-                                            filter_size=(5,5),
-                                            stride=(2,2),
-                                            output_size=(14,14),
-                                            crop=2,
-                                            nonlinearity=None,
-                                            binary=True,
-                                            stochastic=IS_STOCHASTIC,
-                                            H=H,
-                                            W_LR_scale=W_LR_scale,
-                                            b=None
+            gen_dec = binary_net_ex.Deconv2DLayer( gen_dec, num_filters = self.NUM_GEN_FILTERS,
+                                                   filter_size=(5,5),
+                                                   stride=(2,2),
+                                                   output_size=(14,14),
+                                                   crop=2,
+                                                   nonlinearity=None,
+                                                   binary=True,
+                                                   stochastic=IS_STOCHASTIC,
+                                                   H=H,
+                                                   W_LR_scale=W_LR_scale,
+                                                   b=None
             )
         else:
             gen_dec = ll.Deconv2DLayer( gen_dec, num_filters = self.NUM_GEN_FILTERS,
@@ -252,7 +252,7 @@ class BinaryMnist(object):
 
         #(G9)
         if self.IS_GEN_DEC_BN_BIN:
-            gen_dec = binary_net.BatchNormLayer( gen_dec, verbose=True, epsilon=EPSILON, alpha=ALPHA, H=1.0 )
+            gen_dec = binary_net_ex.BatchNormLayer( gen_dec, verbose=True, epsilon=EPSILON, alpha=ALPHA, H=1.0 )
         else:
             gen_dec = ll.BatchNormLayer( gen_dec, epsilon=EPSILON, alpha=ALPHA )
             gen_dec = ll.NonlinearityLayer( gen_dec, nonlinearity=binary_net.binary_tanh_unit )
@@ -265,16 +265,16 @@ class BinaryMnist(object):
 
         #(G11)
         if self.IS_GEN_DEC2_BIN:
-            gen_dec = binary_net.Deconv2DLayer( gen_dec, num_filters = NUM_IMG_CHANNELS,
-                                            filter_size=(5,5), stride=(2,2),
-                                            output_size=(28,28),
-                                            crop=2,
-                                            nonlinearity=None,
-                                            binary=True,
-                                            stochastic=IS_STOCHASTIC,
-                                            H=H,
-                                            W_LR_scale=W_LR_scale,
-                                            b=None
+            gen_dec = binary_net_ex.Deconv2DLayer( gen_dec, num_filters = NUM_IMG_CHANNELS,
+                                                   filter_size=(5,5), stride=(2,2),
+                                                   output_size=(28,28),
+                                                   crop=2,
+                                                   nonlinearity=None,
+                                                   binary=True,
+                                                   stochastic=IS_STOCHASTIC,
+                                                   H=H,
+                                                   W_LR_scale=W_LR_scale,
+                                                   b=None
             )
         else:
             gen_dec = ll.Deconv2DLayer( gen_dec, num_filters = NUM_IMG_CHANNELS,
@@ -351,16 +351,16 @@ class BinaryMnist(object):
 
         #(D3), (D4)
         if self.IS_DIS_BIN:
-            dis = binary_net.Conv2DLayer(dis,
-                                         num_filters = NUM_DIS_FILTERS,
-                                         filter_size = (5,5),
-                                         stride = (2, 2),
-                                         nonlinearity=ln.LeakyRectify(0.2), #TODO
-                                         pad=2,
-                                         binary=True,
-                                         stochastic=IS_STOCHASTIC,
-                                         H=H,
-                                         W_LR_scale=W_LR_scale
+            dis = binary_net_ex.Conv2DLayer(dis,
+                                            num_filters = NUM_DIS_FILTERS,
+                                            filter_size = (5,5),
+                                            stride = (2, 2),
+                                            nonlinearity=ln.LeakyRectify(0.2), #TODO
+                                            pad=2,
+                                            binary=True,
+                                            stochastic=IS_STOCHASTIC,
+                                            H=H,
+                                            W_LR_scale=W_LR_scale
             )
         else:
             dis = ll.Conv2DLayer(dis,
@@ -376,16 +376,16 @@ class BinaryMnist(object):
 
         #(D6)
         if self.IS_DIS_BIN:
-            dis = binary_net.Conv2DLayer(dis,
-                                         num_filters = NUM_DIS_FILTERS*2,
-                                         filter_size = (5, 5),
-                                         stride = (2, 2),
-                                         nonlinearity=None,
-                                         pad=2,
-                                         binary=True,
-                                         stochastic=IS_STOCHASTIC,
-                                         H=H,
-                                         W_LR_scale=W_LR_scale
+            dis = binary_net_ex.Conv2DLayer(dis,
+                                            num_filters = NUM_DIS_FILTERS*2,
+                                            filter_size = (5, 5),
+                                            stride = (2, 2),
+                                            nonlinearity=None,
+                                            pad=2,
+                                            binary=True,
+                                            stochastic=IS_STOCHASTIC,
+                                            H=H,
+                                            W_LR_scale=W_LR_scale
             )
         else:
             dis = ll.Conv2DLayer(dis,
@@ -405,13 +405,13 @@ class BinaryMnist(object):
         dis = ll.ConcatLayer([dis, layer_Y], axis=1)
         #(D9)
         if self.IS_DIS_BIN:
-            dis = binary_net.DenseLayer(dis, num_units=NUM_DIS_FC_UNITS,
-                                        binary=True,
-                                        stochastic=IS_STOCHASTIC,
-                                        H=H,
-                                        W_LR_scale=W_LR_scale,
-                                        b=None, #No Bias
-                                        nonlinearity=None
+            dis = binary_net_ex.DenseLayer(dis, num_units=NUM_DIS_FC_UNITS,
+                                           binary=True,
+                                           stochastic=IS_STOCHASTIC,
+                                           H=H,
+                                           W_LR_scale=W_LR_scale,
+                                           b=None, #No Bias
+                                           nonlinearity=None
             )
         else:
             dis = ll.DenseLayer(dis, num_units=NUM_DIS_FC_UNITS)
