@@ -49,8 +49,23 @@ To convert these params to C++ header, do like this:
 $cd b-dcgan/training
 $python model_to_ch.py 0082_gen_params.jl 0082_gen_sp_params.jl
 ~~~
-**CAUTION**
-The \<N\> value of two files must be same value.
+**CAUTION:** The \<N\> value of two files must be same value.
+
+The results are:
+~~~
+$ls *.h
+model_deconv_W_0.h
+model_deconv_W_1.h
+model_dense_W_0.h
+model_dense_W_1.h
+model_dense_W_2.h
+model_dense_W_3.h
+model_sp_BinBN_tau_0.h
+model_sp_BinBN_tau_1.h
+model_sp_BinBN_tau_2.h
+model_sp_BinBN_tau_3.h
+model_sp_BinBN_tau_4.h
+~~~
 
 ### Setting of 'model_to_ch.py'
 The 'model_to_ch.py' runs by refering python object of class 'BinaryMnist' in 'binary_mnist.py' module which is used in training-time.
