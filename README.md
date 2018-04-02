@@ -41,8 +41,8 @@ One is called 'gen_params' (generator params), The other is called 'gen_sp_param
 - The 'gen_sp_params' includes 'mean' and 'inv_std' of BatchNormalization.
 - Practically, these files are named as below:
   - \<N\>_gen_params.jl
-  - <N>_gen_params.jl
--<N> is the number of training iteration of 4-digits.
+  - \<N\>_gen_params.jl
+-\<N\> is the number of training iteration of 4-digits.
 
 To convert these params to C++ header, do like this:
 ~~~
@@ -50,7 +50,6 @@ $cd b-dcgan/training
 $python model_to_ch.py 0082_gen_params.jl 0082_gen_sp_params.jl
 ~~~
 **CAUTION**
-
 The <N> value of two files must be same value.
 
 
