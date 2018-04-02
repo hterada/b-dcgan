@@ -42,7 +42,7 @@ One is called 'gen_params' (generator params), The other is called 'gen_sp_param
 - Practically, these files are named as below:
   - \<N\>_gen_params.jl
   - \<N\>_gen_params.jl
--\<N\> is the number of training iteration of 4-digits.
+- \<N\> is the number of training iteration of 4-digits.
 
 To convert these params to C++ header, do like this:
 ~~~
