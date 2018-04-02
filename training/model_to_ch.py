@@ -15,8 +15,6 @@ import binary_net
 from binary_net import round3
 from binary_mnist import BinaryMnist
 
-IS_DECODER_BN_BIN=True
-
 def val_func_binary(val):
     if val >= 0.0:
         return '1'
@@ -212,7 +210,8 @@ def convert_gen_params( input_filename, binaryMnist ):
         # param name
         printParamProfile(tvalue)
 
-        if tvalue.name == 'W': # for Dense(FC) Layer
+        if tvalue.name == 'W':
+            # for Dense(FC) Layer
             if binaryMnist.IS_USE_B_FC==True and cnt_W < NUM_ENCODER_LAYER:
                 # bin Dense W
                 filename = 'model_bin_W_%d.h' % cnt_W
@@ -236,28 +235,36 @@ def convert_gen_params( input_filename, binaryMnist ):
         elif tvalue.name == 'beta':
             assert tvalue.ndim==1
             if cnt_beta < NUM_ENCODER_LAYER:
-                # bin BN beta
-                out_bin_beta.append( tvalue )
-            else:
-                # Decoder
-                if IS_DECODER_BN_BIN:
+                # Encoder
+                if binaryMnist.IS_USE_B_BNA_1==True:
                     # bin BN beta
                     out_bin_beta.append( tvalue )
-                    pass
+                else:
+                    # real BN beta
+                    out_beta.append( tvalue )
+            else:
+                # Decoder
+                if binaryMnist.IS_USE_B_BNA_2==True:
+                    # bin BN beta
+                    out_bin_beta.append( tvalue )
                 else:
                     # real BN beta
                     out_beta.append( tvalue )
             cnt_beta += 1
         elif tvalue.name == 'gamma':
             if cnt_gamma < NUM_ENCODER_LAYER:
-                # bin BN gamma
-                out_bin_gamma.append( tvalue )
-            else:
-                # Decoder
-                if IS_DECODER_BN_BIN:
+                # Encoder
+                if binaryMnist.IS_USE_B_BNA_1==True:
                     # bin BN gamma
                     out_bin_gamma.append( tvalue )
-                    pass
+                else:
+                    # real BN beta
+                    out_gamma.append( tvalue )
+            else:
+                # Decoder
+                if binaryMnist.IS_USE_B_BNA_2==True:
+                    # bin BN gamma
+                    out_bin_gamma.append( tvalue )
                 else:
                     # real BN gamma
                     out_gamma.append( tvalue )
@@ -289,10 +296,15 @@ def convert_special_params( input_filename, binaryMnist, list_bin_beta, list_bin
         if tvalue.name == 'mean':
             if cnt_mean < NUM_ENCODER_LAYER:
                 # Encoder
-                list_bin_mean.append( tvalue )
+                if binaryMnist.IS_USE_B_BNA_1==True:
+                    # bin BN
+                    list_bin_mean.append( tvalue )
+                else:
+                    # real BN
+                    list_mean.append( tvalue )
             else:
                 # Decoder
-                if IS_DECODER_BN_BIN:
+                if binaryMnist.IS_USE_B_BNA_2==True:
                     # bin BN
                     list_bin_mean.append( tvalue )
                 else:
@@ -304,11 +316,16 @@ def convert_special_params( input_filename, binaryMnist, list_bin_beta, list_bin
         elif tvalue.name == 'inv_std':
             if cnt_inv_std < NUM_ENCODER_LAYER:
                 # Encoder
-                list_bin_inv_std.append( tvalue )
+                if binaryMnist.IS_USE_B_BNA_1==True:
+                    # bin BN
+                    list_bin_inv_std.append( tvalue )
+                else:
+                    # real BN
+                    list_inv_std.append( tvalue )
             else:
                 # Decoder
-                if IS_DECODER_BN_BIN:
-                    # real BN
+                if binaryMnist.IS_USE_B_BNA_2==True:
+                    # bin BN
                     list_bin_inv_std.append( tvalue )
                 else:
                     # real BN
