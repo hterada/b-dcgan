@@ -139,7 +139,7 @@ def write_array_as_binary(param, name, out_file, flip_filters=False):
     if flip_filters:
         # flip fliters
         out_param = param[:, :, ::-1, ::-1]
-        out_param = out_param.get_value().flatten()
+        out_param = out_param.flatten()
     else:
         out_param = param.flatten()
 
@@ -152,7 +152,7 @@ def write_array_as_binary(param, name, out_file, flip_filters=False):
 
     return
 
-def write_array_as_real(param, typename, name, comment, out_file):
+def write_array_as_real(param, typename, name, comment, out_file, flip_filters):
     #
     # output array original shape
     #
@@ -161,7 +161,12 @@ def write_array_as_real(param, typename, name, comment, out_file):
     #
     # output array
     #
-    out_param = param.flatten()
+    out_param = None
+    if flip_filters:
+        out_param = param[:, :, ::-1, ::-1]
+        out_param = out_param.flatten()
+    else:
+        out_param = param.flatten()
 
     dim_str=''
     for sh in out_param.shape:
@@ -211,23 +216,40 @@ def convert_gen_params( input_filename, binaryMnist ):
         printParamProfile(tvalue)
 
         if tvalue.name == 'W':
-            # for Dense(FC) Layer
-            if binaryMnist.IS_USE_B_FC==True and cnt_W < NUM_ENCODER_LAYER:
-                # bin Dense W
-                filename = 'model_bin_W_%d.h' % cnt_W
+            if cnt_W < NUM_ENCODER_LAYER:
+                # Encoder
+                # for Dense(FC) Layer
+                filename = 'model_dense_W_%d.h' % cnt_W
                 print 'write file:', filename
                 with open_out_file(input_filename, filename) as out_file:
                     assert tvalue.ndim==2
-                    write_array_as_binary(tvalue.get_value(), 'param_bin_W%d' % cnt_W , out_file, flip_filters=False)
+                    if binaryMnist.IS_USE_B_FC==True:
+                        # bin Dense W
+                        write_array_as_binary(tvalue.get_value(), 'param_bin_dense_W%d' % cnt_W , out_file, flip_filters=False)
+                    else:
+                        # real Dense W
+                        write_array_as_real(tvalue.get_value(), 'DenseWType', 'param_dense_W%d' % cnt_W, 'Dense param', out_file, flip_filters=False)
 
             else:
+                # Decoder
                 # deconv W
                 no = cnt_W - NUM_ENCODER_LAYER
                 filename = 'model_deconv_W_%d.h' % no
                 print 'write file:', filename
                 with open_out_file(input_filename, filename) as out_file:
                     assert tvalue.ndim==4
-                    write_array_as_real(tvalue.get_value(), 'DeconvWType', 'param_deconv_W%d' % no , 'Deconv param', out_file)
+                    if no == 0:
+                        # Deconv-1
+                        if binaryMnist.IS_USE_B_DECONV_1==True:
+                            write_array_as_binary(tvalue.get_value(), 'param_bin_deconv_W%d' % no, out_file, flip_filters=True)
+                        else:
+                            write_array_as_real(tvalue.get_value(), 'DeconvWType', 'param_deconv_W%d' % no , 'Deconv param', out_file, flip_filters=True)
+                    else:
+                        # Deconv-2
+                        if binaryMnist.IS_USE_B_DECONV_2==True:
+                            write_array_as_binary(tvalue.get_value(), 'param_bin_deconv_W%d' % no, out_file, flip_filters=True)
+                        else:
+                            write_array_as_real(tvalue.get_value(), 'DeconvWType', 'param_deconv_W%d' % no , 'Deconv param', out_file, flip_filters=True)
 
             # to next
             cnt_W += 1
@@ -353,7 +375,7 @@ def convert_special_params( input_filename, binaryMnist, list_bin_beta, list_bin
             print 'tau:', 'max:', tau.eval().max(), 'min:', tau.eval().min()
 
             name = 'tau_%d' % ix
-            write_array_as_real(tau.eval(), 'TauType', name, 'Bin-BatchNorm tau', out_file)
+            write_array_as_real(tau.eval(), 'TauType', name, 'Bin-BatchNorm tau', out_file, flip_filters=False)
 
     # Real BN
     for ix in range(0, len(list_beta)):
@@ -361,10 +383,10 @@ def convert_special_params( input_filename, binaryMnist, list_bin_beta, list_bin
         print 'write file:', filename
         with open_out_file(input_filename, filename) as out_file:
 
-            write_array_as_real(list_beta[ix].get_value(), 'BetaType', 'beta_%d' % ix, 'BatchNorm beta', out_file)
-            write_array_as_real(list_gamma[ix].get_value(), 'GammaType', 'gamma_%d' % ix, 'BatchNorm gamma', out_file)
-            write_array_as_real(list_mean[ix].get_value(), 'MeanType', 'mean_%d' % ix, 'BatchNorm mean', out_file)
-            write_array_as_real(list_inv_std[ix].get_value(), 'InvStdType', 'inv_std_%d' % ix, 'BatchNorm inv_std', out_file)
+            write_array_as_real(list_beta[ix].get_value(), 'BetaType', 'beta_%d' % ix, 'BatchNorm beta', out_file, flip_filters=False)
+            write_array_as_real(list_gamma[ix].get_value(), 'GammaType', 'gamma_%d' % ix, 'BatchNorm gamma', out_file, flip_filters=False)
+            write_array_as_real(list_mean[ix].get_value(), 'MeanType', 'mean_%d' % ix, 'BatchNorm mean', out_file, flip_filters=False)
+            write_array_as_real(list_inv_std[ix].get_value(), 'InvStdType', 'inv_std_%d' % ix, 'BatchNorm inv_std', out_file, flip_filters=False)
 #
 # main
 #
