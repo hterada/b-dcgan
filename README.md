@@ -50,7 +50,10 @@ $cd b-dcgan/training
 $python model_to_ch.py 0082_gen_params.jl 0082_gen_sp_params.jl
 ~~~
 **CAUTION**
-The <N> value of two files must be same value.
+The \<N\> value of two files must be same value.
 
+### Setting of 'model_to_ch_py'
+The 'model_to_ch.py' runs by refering python object of class 'BinaryMnist' in 'binary_mnist.py' module which is used in training-time.
+So you should let the object's property(flags) 'as-is' when it was used at training.
 
 
