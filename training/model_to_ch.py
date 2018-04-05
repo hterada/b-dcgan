@@ -6,6 +6,7 @@ sys.path.append('dcgan_code/lib')
 sys.path.append('BinaryNet/Train-time')
 
 import os
+import re
 from time import time
 import numpy as np
 import math
@@ -215,7 +216,7 @@ def convert_gen_params( input_filename, binaryMnist ):
         # param name
         printParamProfile(tvalue)
 
-        if tvalue.name == 'W':
+        if re.match('.*W', tvalue.name):
             if cnt_W < NUM_ENCODER_LAYER:
                 # Encoder
                 # for Dense(FC) Layer
@@ -254,7 +255,7 @@ def convert_gen_params( input_filename, binaryMnist ):
             # to next
             cnt_W += 1
 
-        elif tvalue.name == 'beta':
+        elif re.match('.*beta', tvalue.name):
             assert tvalue.ndim==1
             if cnt_beta < NUM_ENCODER_LAYER:
                 # Encoder
@@ -273,7 +274,7 @@ def convert_gen_params( input_filename, binaryMnist ):
                     # real BN beta
                     out_beta.append( tvalue )
             cnt_beta += 1
-        elif tvalue.name == 'gamma':
+        elif re.match('.*gamma', tvalue.name):
             if cnt_gamma < NUM_ENCODER_LAYER:
                 # Encoder
                 if binaryMnist.IS_USE_B_BNA_1==True:
@@ -291,7 +292,7 @@ def convert_gen_params( input_filename, binaryMnist ):
                     # real BN gamma
                     out_gamma.append( tvalue )
             cnt_gamma += 1
-        elif tvalue.name == 'b':
+        elif re.match('.*\.b$', tvalue.name):
             assert tvalue.ndim==1
             # b, skip
             assert tvalue.get_value().min() == 0
@@ -315,7 +316,7 @@ def convert_special_params( input_filename, binaryMnist, list_bin_beta, list_bin
     for tvalue in l_params:
         printParamProfile(tvalue)
 
-        if tvalue.name == 'mean':
+        if re.match('.*mean', tvalue.name):
             if cnt_mean < NUM_ENCODER_LAYER:
                 # Encoder
                 if binaryMnist.IS_USE_B_BNA_1==True:
@@ -335,7 +336,7 @@ def convert_special_params( input_filename, binaryMnist, list_bin_beta, list_bin
 
             cnt_mean += 1
 
-        elif tvalue.name == 'inv_std':
+        elif re.match('.*inv_std', tvalue.name):
             if cnt_inv_std < NUM_ENCODER_LAYER:
                 # Encoder
                 if binaryMnist.IS_USE_B_BNA_1==True:
