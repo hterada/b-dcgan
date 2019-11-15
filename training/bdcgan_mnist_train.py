@@ -1,8 +1,5 @@
 # -*- coding:utf-8 -*-
 import sys
-sys.path.append('dcgan_code/')
-sys.path.append('dcgan_code/lib')
-sys.path.append('dcgan_code/mnist')
 
 import os
 import json
@@ -22,17 +19,17 @@ import lasagne.layers as ll
 import lasagne.objectives as lo
 import lasagne.updates as lu
 
-from lib import activations
-from lib import updates
-from lib import inits
-from lib.vis import grayscale_grid_vis
-from lib.rng import py_rng, np_rng
-from lib.ops import batchnorm, conv_cond_concat, deconv, dropout
-from lib.theano_utils import floatX, sharedX
-from lib.data_utils import OneHot, shuffle, iter_data
-from lib.metrics import nnc_score, nnd_score
+from dcgan_code.lib import activations
+from dcgan_code.lib import updates
+from dcgan_code.lib import inits
+from dcgan_code.lib.vis import grayscale_grid_vis
+from dcgan_code.lib.rng import py_rng, np_rng
+from dcgan_code.lib.ops import batchnorm, conv_cond_concat, deconv, dropout
+from dcgan_code.lib.theano_utils import floatX, sharedX
+from dcgan_code.lib.data_utils import OneHot, shuffle, iter_data
+from dcgan_code.lib.metrics import nnc_score, nnd_score
 
-from load import mnist_with_valid_set
+from dcgan_code.mnist.load import mnist_with_valid_set
 
 import binary_mnist
 
