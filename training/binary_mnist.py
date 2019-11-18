@@ -7,9 +7,9 @@
 import sys
 #sys.path.append('..')
 sys.path.append('dcgan_code')
-sys.path.append('dcgan_code/lib')
+#sys.path.append('dcgan_code/lib')
 sys.path.append('dcgan_code/mnist')
-sys.path.append('BinaryNet/Train-time')
+#sys.path.append('BinaryNet/Train_time')
 
 import os
 import time
@@ -31,21 +31,21 @@ import lasagne
 import lasagne.layers as ll
 import lasagne.nonlinearities as ln
 
-import binary_net
+import BinaryNet.Train_time.binary_net as binary_net
 import binary_net_ex
-from binary_net import binarization
-from binary_net import round3
+from BinaryNet.Train_time.binary_net import binarization
+from BinaryNet.Train_time.binary_net import round3
 
 from collections import OrderedDict
 
-from lib import inits
-from lib import updates
-from lib.theano_utils import floatX, sharedX
-from lib.rng import py_rng, np_rng
+from dcgan_code.lib import inits
+from dcgan_code.lib import updates
+from dcgan_code.lib.theano_utils import floatX, sharedX
+from dcgan_code.lib.rng import py_rng, np_rng
 
-from lib.data_utils import OneHot, shuffle, iter_data
+from dcgan_code.lib.data_utils import OneHot, shuffle, iter_data
 
-from mnist.load import mnist_with_valid_set
+from dcgan_code.mnist.load import mnist_with_valid_set
 
 # BatchNorm params
 ALPHA = .1
