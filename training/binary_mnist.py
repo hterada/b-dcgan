@@ -231,6 +231,7 @@ class BinaryMnist(object):
         #(G8)
         # deconvolution
         if self.IS_USE_B_DECONV_1:
+            # binary Deconv
             gen_dec = binary_net_ex.Deconv2DLayer( gen_dec, num_filters = self.NUM_GEN_FILTERS,
                                                    filter_size=(5,5),
                                                    stride=(2,2),
@@ -244,6 +245,7 @@ class BinaryMnist(object):
                                                    b=None
             )
         else:
+            # Vanilla Deconv
             gen_dec = ll.Deconv2DLayer( gen_dec, num_filters = self.NUM_GEN_FILTERS,
                                         filter_size=(5,5),
                                         stride=(2,2),

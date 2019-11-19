@@ -16,10 +16,11 @@ import lasagne.init as init
 
 from theano.sandbox.rng_mrg import MRG_RandomStreams as RandomStreams
 
-from binary_net import round3, hard_sigmoid, binarization
+from BinaryNet.Train_time.binary_net import round3, hard_sigmoid, binarization, binary_tanh_unit
 
 floatT = np.float32
 
+# tanh like function that outputs +H or -H
 def binary_tanh_unit2(x, H):
     return (2.*round3(hard_sigmoid(x))-1.)*H
 
@@ -255,6 +256,7 @@ class DeconvSparse2DLayer(lasagne.layers.Layer):
         return out
 
 # by Hideo Terada
+#  this implemenation is based on '4.2.2 Batchnorm-activation as Threshold' in FINN paper
 class BatchNormLayer(lasagne.layers.BatchNormLayer):
     def __init__(self, incoming, H, verbose=False, axes='auto', epsilon=1e-4, alpha=0.1,
                  beta=init.Constant(0), gamma=init.Constant(1),
@@ -323,8 +325,9 @@ class BatchNormLayer(lasagne.layers.BatchNormLayer):
         else:
 
             #---- by H.Terada from here
-            # FINN style activation by threshold
+            # FINN style 'Batchnorm-activation as threshold'
 
+            # gamma:=gamma_k, inv_std:=i_k, mean := mu_k, beta = B_k in FINN paper
             gi = gamma*inv_std
             tau = round3(mean - beta/gi)
 
@@ -343,6 +346,7 @@ class BatchNormLayer(lasagne.layers.BatchNormLayer):
 
             #output = T.switch( T.ge( input, tau), +1, -1 ) #NG
 
+            # output value is either +H or -H; H default is '1.0'
             output = binary_tanh_unit2( input - tau, self.H ) #OK
 
             return output

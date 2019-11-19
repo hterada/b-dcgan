@@ -108,13 +108,17 @@ class DenseLayer(lasagne.layers.DenseLayer):
             super(DenseLayer, self).__init__(incoming, num_units, **kwargs)
         
     def get_output_for(self, input, deterministic=False, **kwargs):
-        
+        # calc binarized W value Wb
         self.Wb = binarization(self.W,self.H,self.binary,deterministic,self.stochastic,self._srng)
+        # reserve real W value: Wr
         Wr = self.W
+
+        # use Wb temporarily for getting output
         self.W = self.Wb
-            
+        # calc output using the Wb value
         rvalue = super(DenseLayer, self).get_output_for(input, **kwargs)
         
+        # restore the real W value into self.W
         self.W = Wr
         
         return rvalue
